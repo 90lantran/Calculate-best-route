@@ -8,12 +8,19 @@
 package roadgraph;
 
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 import java.util.function.Consumer;
 
 import geography.GeographicPoint;
 import util.GraphLoader;
+
 
 /**
  * @author UCSD MOOC development team and YOU
@@ -23,15 +30,15 @@ import util.GraphLoader;
  *
  */
 public class MapGraph {
-	//TODO: Add your member variables here in WEEK 2
-	
+
+	private Map<GeographicPoint, MapNode> vertices;
 	
 	/** 
 	 * Create a new empty MapGraph 
 	 */
 	public MapGraph()
 	{
-		// TODO: Implement in this constructor in WEEK 2
+		vertices = new HashMap<>();
 	}
 	
 	/**
@@ -40,8 +47,7 @@ public class MapGraph {
 	 */
 	public int getNumVertices()
 	{
-		//TODO: Implement this method in WEEK 2
-		return 0;
+		return vertices.values().size();
 	}
 	
 	/**
@@ -50,8 +56,12 @@ public class MapGraph {
 	 */
 	public Set<GeographicPoint> getVertices()
 	{
-		//TODO: Implement this method in WEEK 2
-		return null;
+
+		Set<GeographicPoint> verticesLocations = new HashSet<GeographicPoint>();
+		for(MapNode node : vertices.values()){
+			verticesLocations.add(node.getLocation());
+		}
+		return verticesLocations;
 	}
 	
 	/**
@@ -60,8 +70,11 @@ public class MapGraph {
 	 */
 	public int getNumEdges()
 	{
-		//TODO: Implement this method in WEEK 2
-		return 0;
+		int numEdges = 0;
+		for(MapNode node : vertices.values()){
+			numEdges += node.getEdges().size();
+		}		
+		return numEdges;
 	}
 
 	
@@ -76,7 +89,12 @@ public class MapGraph {
 	public boolean addVertex(GeographicPoint location)
 	{
 		// TODO: Implement this method in WEEK 2
+		if (location == null || vertices.containsKey(location)){
 		return false;
+		} else {
+			vertices.put(location, new MapNode(location)); // maybe wrong the constructor 
+			return true; // Wrong idea, to make a node, you need location and edges
+		}
 	}
 	
 	/**
@@ -93,8 +111,9 @@ public class MapGraph {
 	 */
 	public void addEdge(GeographicPoint from, GeographicPoint to, String roadName,
 			String roadType, double length) throws IllegalArgumentException {
-
-		//TODO: Implement this method in WEEK 2
+		
+		vertices.get(from).getEdges().add(new MapEdge(from, to, roadType, length));
+		
 		
 	}
 	
@@ -124,11 +143,58 @@ public class MapGraph {
 			 					     GeographicPoint goal, Consumer<GeographicPoint> nodeSearched)
 	{
 		// TODO: Implement this method in WEEK 2
+		MapNode begin = vertices.get(start);
+		MapNode end = vertices.get(goal);
+		
+		HashSet<MapNode> visited = new HashSet<MapNode>();
+		Queue<MapNode> toExplore = new LinkedList<MapNode>(); 
+		HashMap<MapNode, MapNode> parentMap = new HashMap<MapNode, MapNode>();
+		toExplore.add(begin);
+		nodeSearched.accept(begin.getLocation());
+		boolean found = false;
+		
+		while (!toExplore.isEmpty()){
+			MapNode curr = toExplore.remove();
+			if (curr == end){
+				found = true;
+				break;
+			}
+			visited.add(curr);
+			List<MapEdge> neighbors = curr.getEdges();
+			for(MapEdge e : neighbors){
+				MapNode next = vertices.get(e.getEnd());
+				if (!visited.contains(next)){
+					visited.add(next);
+					toExplore.add(next);
+					nodeSearched.accept(e.getEnd());
+					parentMap.put(next, curr);
+				}				
+			}
+			
+		}
+		
+		if (!found) {
+			System.out.println("No path exists");
+			return new ArrayList<GeographicPoint>();
+		}
+		// reconstruct the path
+		LinkedList<GeographicPoint> path = new LinkedList<GeographicPoint>();
+		MapNode curr = end;
+		while (curr != begin) {
+			path.addFirst(curr.getLocation());
+			curr = parentMap.get(curr);
+		}
+		path.addFirst(start);
+		return path;
+		
+		
+		
+		
 		
 		// Hook for visualization.  See writeup.
 		//nodeSearched.accept(next.getLocation());
 
-		return null;
+		//return null;
 	}
 	
 
@@ -206,6 +272,12 @@ public class MapGraph {
 		System.out.print("DONE. \nLoading the map...");
 		GraphLoader.loadRoadMap("data/testdata/simpletest.map", theMap);
 		System.out.println("DONE.");
+		GeographicPoint start = new GeographicPoint(1, 1);
+		GeographicPoint goal = new GeographicPoint(8, -1);
+		List<GeographicPoint> ans = theMap.bfs(start, goal);
+		for(GeographicPoint p : ans){
+		System.out.println(p);
+		}
 		
 		// You can use this method for testing.  
 		
