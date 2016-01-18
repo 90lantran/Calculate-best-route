@@ -9,14 +9,17 @@ package roadgraph;
 
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.Set;
 import java.util.function.Consumer;
+import com.sun.scenario.effect.impl.prism.ps.PPSBlend_ADDPeer;
 
 import geography.GeographicPoint;
 import util.GraphLoader;
@@ -224,11 +227,72 @@ public class MapGraph {
 										  GeographicPoint goal, Consumer<GeographicPoint> nodeSearched)
 	{
 		// TODO: Implement this method in WEEK 3
-
+		
+		PriorityQueue<MapNode> pq = new PriorityQueue<>(new Comparator<MapNode>() {
+			@Override
+			public int compare(MapNode o1, MapNode o2) {
+				return o1.compareTo(o2);
+	
+			}	
+		});
+		
+		HashSet<MapNode> visited = new HashSet<>();
+		Map<MapNode, MapNode> parentMap = new HashMap<>();
+		MapNode begin = vertices.get(start);
+		MapNode end = vertices.get(goal);
+		boolean found = false;
+		// initialize distances
+		for(GeographicPoint point : getVertices()){
+			vertices.get(point).setFromStartPoint(Double.MAX_VALUE);
+		}
+		begin.setFromStartPoint(0.0);
+		
+		pq.add(begin);
+		
+		while(!pq.isEmpty()){
+			MapNode curr = pq.remove();
+			nodeSearched.accept(curr.getLocation());
+			if (!visited.contains(curr)){
+				visited.add(curr);
+				if (curr == end){
+					//return parentMap;
+					found = true;
+					break;
+				}
+				
+				List<MapEdge> neighors = curr.getEdges();
+				for(MapEdge n : neighors){
+					if(!visited.contains(n.getEnd())){
+						Double newDistance = curr.getFromStartPoint() + n.getDistance();
+						if (newDistance < vertices.get(n.getEnd()).getFromStartPoint()){
+							vertices.get(n.getEnd()).setFromStartPoint(newDistance);
+							parentMap.put(vertices.get(n.getEnd()),curr);
+							pq.add(vertices.get(n.getEnd()));
+						}					
+					}
+				}
+			}
+		}
+		
+		
+		if (!found) {
+			System.out.println("No path exists");
+			return new ArrayList<GeographicPoint>();
+		}
+		// reconstruct the path
+		LinkedList<GeographicPoint> path = new LinkedList<GeographicPoint>();
+		MapNode curr = end;
+		while (curr != begin) {
+			path.addFirst(curr.getLocation());
+			curr = parentMap.get(curr);
+		}
+		path.addFirst(start);
+		return path;
+		
 		// Hook for visualization.  See writeup.
 		//nodeSearched.accept(next.getLocation());
 		
-		return null;
+		
 	}
 
 	/** Find the path from start to goal using A-Star search
@@ -259,8 +323,71 @@ public class MapGraph {
 		
 		// Hook for visualization.  See writeup.
 		//nodeSearched.accept(next.getLocation());
+		PriorityQueue<MapNode> pq = new PriorityQueue<>(new Comparator<MapNode>() {
+			@Override
+			public int compare(MapNode o1, MapNode o2) {
+				return o1.compareTo(o2);
+	
+			}	
+		});
 		
-		return null;
+		HashSet<MapNode> visited = new HashSet<>();
+		Map<MapNode, MapNode> parentMap = new HashMap<>();
+		MapNode begin = vertices.get(start);
+		MapNode end = vertices.get(goal);
+		boolean found = false;
+		// initialize distances
+		for(GeographicPoint point : getVertices()){
+			vertices.get(point).setFromStartPoint(Double.MAX_VALUE);
+		}
+		begin.setFromStartPoint(0.0);
+		
+		pq.add(begin);
+		
+		while(!pq.isEmpty()){
+			MapNode curr = pq.remove();
+			nodeSearched.accept(curr.getLocation());
+			if (!visited.contains(curr)){
+				visited.add(curr);
+				if (curr == end){
+					//return parentMap;
+					found = true;
+					break;
+				}
+				
+				List<MapEdge> neighors = curr.getEdges();
+				for(MapEdge n : neighors){
+					if(!visited.contains(n.getEnd())){
+						Double newDistance = curr.getFromStartPoint() + n.getDistance()
+						+ n.getEnd().distance(goal);
+						if (newDistance < vertices.get(n.getEnd()).getFromStartPoint()){
+							vertices.get(n.getEnd()).setFromStartPoint(newDistance);
+							parentMap.put(vertices.get(n.getEnd()),curr);
+							pq.add(vertices.get(n.getEnd()));
+						}					
+					}
+				}
+			}
+		}
+		
+		
+		if (!found) {
+			System.out.println("No path exists");
+			return new ArrayList<GeographicPoint>();
+		}
+		// reconstruct the path
+		LinkedList<GeographicPoint> path = new LinkedList<GeographicPoint>();
+		MapNode curr = end;
+		while (curr != begin) {
+			path.addFirst(curr.getLocation());
+			curr = parentMap.get(curr);
+		}
+		path.addFirst(start);
+		return path;
+		
+		
+		
+		
 	}
 
 	
@@ -272,29 +399,42 @@ public class MapGraph {
 		System.out.print("DONE. \nLoading the map...");
 		GraphLoader.loadRoadMap("data/testdata/simpletest.map", theMap);
 		System.out.println("DONE.");
-		GeographicPoint start = new GeographicPoint(1, 1);
-		GeographicPoint goal = new GeographicPoint(8, -1);
-		List<GeographicPoint> ans = theMap.bfs(start, goal);
-		for(GeographicPoint p : ans){
-		System.out.println(p);
-		}
+//		GeographicPoint start = new GeographicPoint(1, 1);
+//		GeographicPoint goal = new GeographicPoint(8, -1);
+//		List<GeographicPoint> ans = theMap.bfs(start, goal);
+//		for(GeographicPoint p : ans){
+//		System.out.println(p);
+//		}
 		
 		// You can use this method for testing.  
 		
-		/* Use this code in Week 3 End of Week Quiz
-		MapGraph theMap = new MapGraph();
-		System.out.print("DONE. \nLoading the map...");
-		GraphLoader.loadRoadMap("data/maps/utc.map", theMap);
-		System.out.println("DONE.");
-
-		GeographicPoint start = new GeographicPoint(32.8648772, -117.2254046);
-		GeographicPoint end = new GeographicPoint(32.8660691, -117.217393);
+		/* Use this code in Week 3 End of Week Quiz */
+//		MapGraph theMap = new MapGraph();
+//		System.out.print("DONE. \nLoading the map...");
+//		GraphLoader.loadRoadMap("data/maps/utc.map", theMap);
+//		System.out.println("DONE.");
+		
+		// for simple 
+		GeographicPoint start = new GeographicPoint(1, 1);
+		GeographicPoint end = new GeographicPoint(8, -1);
+		
+		// For utc
+//		GeographicPoint start = new GeographicPoint(32.8648772, -117.2254046);
+//		GeographicPoint end = new GeographicPoint(32.8660691, -117.217393);
 		
 		
 		List<GeographicPoint> route = theMap.dijkstra(start,end);
+
+		for(GeographicPoint p : route){
+		System.out.println(p);
+		}
+		System.out.println("\nFor A*");
 		List<GeographicPoint> route2 = theMap.aStarSearch(start,end);
 
-		*/
+		for(GeographicPoint p : route2){
+			System.out.println(p);
+			}
+		
 		
 	}
 	
